@@ -89,7 +89,7 @@ def Category(request, id=0):
             except:
                 return Response(data={"status" : 204, "message" : "Category Tidak dietmukan"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response(data={"status" : 204, "message" : "Pilih Category yang mau di hapus"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={"status" : 204, "message" : "kehapus cok"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'POST','PUT','DELETE'])
