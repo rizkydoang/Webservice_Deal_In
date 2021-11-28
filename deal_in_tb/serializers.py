@@ -11,7 +11,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = TblUser
-        fields = ('username', 'password', 'name', 'address', 'birth_date', 'id_role', 'photo_profile')
+        fields = ('username', 'password', 'name', 'address', 'birth_date', 'photo_profile')
 
 
 class StoresSerializer(serializers.ModelSerializer):

@@ -28,6 +28,7 @@ def Login(request):
 @api_view(['POST'])
 def SignUp(request):
     if request.method == 'POST':
+        print(request.data)
         serializer = serializers.UsersSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -37,7 +38,7 @@ def SignUp(request):
 
 
 @api_view(['GET', 'POST'])
-@api_key_required
+@token_required
 def SignUpStore(request, username):
     data = request.data
     if request.method == 'POST':

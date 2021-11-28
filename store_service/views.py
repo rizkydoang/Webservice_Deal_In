@@ -13,12 +13,11 @@ import datetime
 
 # Create your views here.
 @api_view(['GET'])
-@api_key_required
 def Index(request):
     if request.method == 'GET':
         try:
             item = TblItem.objects.filter(deleted=0)
-            ser = serializers.ItemsIndexSerializer(item, many=True)
+            ser = serializers.ItemsIndexSerializer(item, context={"request": request}, many=True)
             return Response(data={"all_item" : ser.data}, status=status.HTTP_200_OK)
         except:
             return Response(data={"all_item" : []}, status=status.HTTP_400_BAD_REQUEST)
@@ -34,11 +33,11 @@ def IndexStore(request, id_store):
             item = TblItem.objects.filter(id_store=id_store, deleted=0)
             if item.exists():
                 ser = serializers.ItemsIndexSerializer(item, context={"request": request}, many=True)
-                return Response(data=ser.data, status=status.HTTP_200_OK)
+                return Response(data={"item_store" : ser.data}, status=status.HTTP_200_OK)
             else:
-                return Response(data={"item_store": []}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(data={"item_store" : []}, status=status.HTTP_400_BAD_REQUEST)
         except:
-            return Response(data={"item_store": []}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={"item_store" : []}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
@@ -99,17 +98,17 @@ def Item(request, id=0):
         if id == 0:
             try:
                 Item = TblItem.objects.filter(deleted=0)
-                ser = serializers.ItemsIndexSerializer(Item, many=True)
+                ser = serializers.ItemsIndexSerializer(Item, context={"request": request}, many=True)
                 return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
             except:
                 return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=204)
         else:
-            try:
-                Item = TblItem.objects.filter(pk=id, deleted=0)
-                ser = serializers.ItemsIndexSerializer(Item, many=True)
-                return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
-            except:
-                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=204)
+            # try:
+            Item = TblItem.objects.filter(pk=id, deleted=0)
+            ser = serializers.ItemsIndexSerializer(Item, context={"request": request}, many=True)
+            return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
+            # except:
+            #     return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=204)
 
     if request.method == 'POST':
         try:
@@ -155,14 +154,14 @@ def Cart(request, id=0):
                 ser = serializers.CartsIndexSerializer(Cart, many=True)
                 return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
             except:
-                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=204)
+                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
                 Cart = TblCart.objects.filter(pk=id, deleted=0)
                 ser = serializers.CartsIndexSerializer(Cart, many=True)
                 return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
             except:
-                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=204)
+                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
 
     if request.method == 'POST':
         try:

@@ -10,24 +10,13 @@ import random
 import string
 from datetime import datetime    
 
+
 class TblCategory(models.Model):
     name = models.CharField(max_length=50)
     deleted = models.CharField(max_length=1, default=0)
 
     class Meta:
         db_table = 'tbl_category'
-
-
-# class TblDataTrans(models.Model):
-#     id_item = models.ForeignKey(
-#         'TblItem', models.DO_NOTHING, db_column='id_item')
-#     id_trans = models.ForeignKey(
-#         'TblTransaction', models.DO_NOTHING, db_column='id_trans')
-#     qty = models.IntegerField(default=0)
-#     deleted = models.CharField(max_length=2, default=0)
-
-#     class Meta:
-#         db_table = 'tbl_data_trans'
 
 
 class TblTransaction(models.Model):
@@ -95,6 +84,13 @@ class TblDocuments(models.Model):
         db_table = 'tbl_documents'
 
 
+def StringRandomApiKey(length):
+    source = string.ascii_letters + string.digits
+    result_str = ''.join((random.choice(source) for i in range(length)))
+
+    return result_str
+
+
 class TblStore(models.Model):
     status_list = [
         ('0', 'Tunggu Konfirmasi'),
@@ -108,18 +104,13 @@ class TblStore(models.Model):
     nik = models.ForeignKey(
         'TblDocuments', models.DO_NOTHING, db_column='nik', blank=True, null=True)
     pin = models.CharField(max_length=4)
+    api_key = models.CharField(max_length=50, default = StringRandomApiKey(50))
+    limited = models.IntegerField(default=0)
     status = models.CharField(max_length=2, choices=status_list, default=0)
     deleted = models.CharField(max_length=1, default=0)
 
     class Meta:
         db_table = 'tbl_store'
-
-
-def StringRandomApiKey(length):
-    source = string.ascii_letters + string.digits
-    result_str = ''.join((random.choice(source) for i in range(length)))
-
-    return result_str
 
 
 class TblUser(models.Model):
@@ -130,9 +121,7 @@ class TblUser(models.Model):
     photo_profile = models.ImageField(default='0', upload_to='images/profile/')
     birth_date = models.DateField()
     id_role = models.ForeignKey(
-        'TblRole', models.DO_NOTHING, db_column='id_role')
-    api_key = models.CharField(max_length=50, default = StringRandomApiKey(50))
-    limited = models.IntegerField(default=0)
+        'TblRole', models.DO_NOTHING, db_column='id_role', default=3)
     deleted = models.CharField(max_length=1, default=0)
 
     class Meta:
