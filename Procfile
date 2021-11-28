@@ -1,0 +1,1 @@
+web: gunicorn deal_in_tb.wsgi --log-file -
