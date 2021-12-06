@@ -49,7 +49,7 @@ class CartsIndexSerializer(serializers.ModelSerializer):
     id_item = ItemsIndexSerializer()
     class Meta:
         model = TblCart
-        fields = ('id','id_item', 'username')
+        fields = ('id','id_item', 'username', 'total', 'qty')
 
 
 class CartsSerializer(serializers.ModelSerializer):
@@ -64,17 +64,17 @@ class CartsSerializer(serializers.ModelSerializer):
 #         fields = ('id','id_item', 'id_trans', 'qty')
 
 
-class TransactionIndexSerializer(serializers.ModelSerializer):
-    id_item = ItemsSerializer()
-    class Meta:
-        model = TblTransaction
-        fields = ('id', 'username', 'id_item', 'total', 'description')
+# class TransactionIndexSerializer(serializers.ModelSerializer):
+#     id_item = ItemsSerializer()
+#     class Meta:
+#         model = TblTransaction
+#         fields = ('id', 'username', 'id_item', 'total', 'description')
 
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TblTransaction
-        fields = ('id', 'username', 'id_item', 'total', 'description')
+        fields = ('id', 'username', 'total', 'get_status_display', 'date')
 
 
 class RolesSerializer(serializers.ModelSerializer):

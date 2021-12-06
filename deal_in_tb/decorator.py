@@ -8,19 +8,19 @@ import datetime
 
 def token_required(func):
     def inner(request, *args, **kwargs):
-        try:
-            jwt = JWTAuth()
-            if 'Authorization' in request.headers:
-                data = jwt.decode(request.headers['Authorization'])
-                TblUser.objects.filter(username=data['username']).values().first()
-                if datetime.datetime.now() < datetime.datetime.fromisoformat(data['expired']):
-                    return func(request, *args, **kwargs)
-                else:
-                    return Response(data={"message": "Token Expired !"}, status=status.HTTP_400_BAD_REQUEST)
+        # try:
+        jwt = JWTAuth()
+        if 'Authorization' in request.headers:
+            data = jwt.decode(request.headers['Authorization'])
+            TblUser.objects.filter(username=data['username']).values().first()
+            if datetime.datetime.now() < datetime.datetime.fromisoformat(data['expired']):
+                return func(request, *args, **kwargs)
             else:
-                return Response(data={"message": "Masukan Token !"}, status=status.HTTP_400_BAD_REQUEST)
-        except:
-            return Response(data={"message": "Token tidak Valid"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(data={"message": "Token Expired !"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(data={"message": "Masukan Token !"}, status=status.HTTP_400_BAD_REQUEST)
+        # except:
+        #     return Response(data={"message": "Token tidak Valid"}, status=status.HTTP_400_BAD_REQUEST)
 
     return inner
 

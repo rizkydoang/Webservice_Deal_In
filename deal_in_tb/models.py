@@ -26,12 +26,9 @@ class TblTransaction(models.Model):
         ('2', 'Sukses'),
     ]
     date = models.DateField(default=datetime.now, blank=True)
-    description = models.CharField(max_length=250, blank=True, null=True)
     status = models.CharField(max_length=1, choices=status_list, default=0)
     total = models.IntegerField(default=0)
     token = models.CharField(max_length=250, blank=True, null=True)
-    id_item = models.ForeignKey(
-        'TblItem', models.DO_NOTHING, db_column='id_item', blank=True, null=True)
     username = models.ForeignKey(
         'TblUser', models.DO_NOTHING, db_column='username', blank=True, null=True)
     deleted = models.CharField(max_length=1, default=0)
@@ -59,8 +56,12 @@ class TblItem(models.Model):
 class TblCart(models.Model):
     id_item = models.ForeignKey(
         'TblItem', models.DO_NOTHING, db_column='id_item', blank=True, null=True)
+    id_transaction = models.ForeignKey(
+        'TblTransaction', models.DO_NOTHING, db_column='id_transaction', blank=True, null=True)
     username = models.ForeignKey(
         'TblUser', models.DO_NOTHING, db_column='username', blank=True, null=True)
+    qty = models.IntegerField(default=0)
+    total = models.IntegerField(default=0)
     deleted = models.CharField(max_length=1, default=0)
 
     class Meta:

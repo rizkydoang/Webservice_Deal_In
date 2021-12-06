@@ -1,12 +1,11 @@
 from django.shortcuts import get_object_or_404
-from deal_in_tb.models import TblCategory, TblItem, TblCart, TblTransaction
+from deal_in_tb.models import TblCategory, TblItem, TblCart, TblTransaction, TblUser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from deal_in_tb import serializers
 from deal_in_tb.decorator import token_required, api_key_required
 from deal_in_tb.jwt import JWTAuth
-from django.http import QueryDict
 from django.db.models import Q
 
 import datetime
@@ -92,7 +91,6 @@ def Category(request, id=0):
 
 
 @api_view(['GET', 'POST','PUT','DELETE'])
-@token_required
 def Item(request, id=0):
     if request.method == 'GET':
         if id == 0:
@@ -141,37 +139,44 @@ def Item(request, id=0):
             return Response(data={"status" : 204, "message" : "Pilih Item yang mau di hapus"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'DELETE'])
 @token_required
-@api_key_required
 def Cart(request, id=0):
     if request.method == 'GET':
         jwt = JWTAuth()
-        if id == 0:
-            try:
-                data = jwt.decode(request.headers['Authorization'])
-                Cart = TblCart.objects.filter(username=data['username'], deleted=0)
-                ser = serializers.CartsIndexSerializer(Cart, many=True)
-                return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
-            except:
-                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            try:
-                Cart = TblCart.objects.filter(pk=id, deleted=0)
-                ser = serializers.CartsIndexSerializer(Cart, many=True)
-                return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
-            except:
-                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
-
-    if request.method == 'POST':
         try:
-            serializer = serializers.CartsSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(data={"status" : 200, "message" : "Berhasil Menambahkan Data", "data" : serializer.data},  status=status.HTTP_201_CREATED)
+            data = jwt.decode(request.headers['Authorization'])
+            Cart = TblCart.objects.filter(username=data['username'], deleted=0)
+            ser = serializers.CartsIndexSerializer(Cart, context={"request": request}, many=True)
+            return Response(data={"status" : 200, "message" : "Berhasil Mengambil Data", "data" : ser.data}, status=status.HTTP_200_OK)
         except:
             return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
 
+    if request.method == 'POST':
+        try:
+            if not TblCart.objects.filter(id_item=request.data['id_item'], username=request.data['username']).exists():
+                serializer = serializers.CartsSerializer(data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(data={"status" : 200, "message" : "Berhasil menambahkan data", "data" : serializer.data},  status=status.HTTP_201_CREATED)
+            else:
+                return Response(data={"status" : 400, "message" : "Item sudah ditambahkan sebelumnya"},  status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response(data={"status" : 400, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'DELETE':
+        if id != 0:
+            jwt = JWTAuth()
+            try:
+                data = jwt.decode(request.headers['Authorization'])
+                delete = TblCart.objects.get(pk=id, username=data['username']).delete()
+                if delete:
+                    return Response(data={"status" : 200, "message" : "Berhasil menghapus data"},  status=status.HTTP_201_CREATED)
+                return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
+            except:
+                return Response(data={"status" : 204, "message" : "Cart Tidak dietmukan"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(data={"status" : 204, "message" : "Pilih Cart yang mau di hapus"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -185,31 +190,68 @@ def Search(request, search):
             return Response(data={"all_item" : []}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @api_view(['GET', 'POST'])
 @token_required
-@api_key_required
 def Transaction(request):
     if request.method == 'POST':
         jwt = JWTAuth()
-        # try:
-        data = request.data
-        # print(data['id_item'])
-        if TblTransaction.objects.filter(id_item=data['id_item'], status=0).exists():
-            Trans = TblTransaction.objects.filter(id_item=data['id_item'], status=0)
-            trans_ser = serializers.TransactionIndexSerializer(Trans, many=True)
-            Item = TblItem.objects.filter(pk=data['id_item'], deleted=0)
-            item_ser = serializers.ItemsIndexSerializer(Item, many=True)
-            # print(trans_ser.data)
-            return Response(data={"status" : 400, "message" : "Item Sebelumnya Belum di bayar", "trans" : trans_ser.data, "item": item_ser.data},  status=status.HTTP_400_BAD_REQUEST)
-        else:
-            trans_ser = serializers.TransactionSerializer(data=data)
-            if trans_ser.is_valid():
-                trans_ser.save()
-                Item = TblItem.objects.filter(pk=data['id_item'], deleted=0)
-                ser = serializers.ItemsIndexSerializer(Item, many=True)
-                # print(trans_ser.data)
-                # print(ser.data)
-                return Response(data={"status" : 200, "message" : "Berhasil Menambahkan Data", "trans" : trans_ser.data, "item": ser.data},  status=status.HTTP_201_CREATED)
-        # except:
-        #     return Response(data={"status" : 204, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            data_header = jwt.decode(request.headers['Authorization'])
+            if TblTransaction.objects.filter(username=data_header['username'], status=0).exists():
+                data_trans = TblTransaction.objects.filter(username=data_header['username'], deleted=0)
+                ser = serializers.TransactionSerializer(data_trans, many=True)
+                return Response(data={"status" : 204, "data": ser.data, "message" : "Transaksi Sebelumnya Belum di bayar"},  status=status.HTTP_400_BAD_REQUEST)
+
+            data = request.data
+            detail_qty = []
+            detail_total = []
+            total = 0
+            for idx, i in enumerate(data.getlist('id_item')):
+                data_item = TblItem.objects.filter(pk=i, deleted=0).first()
+                detail_qty.append(int(data.getlist('qty')[idx]))
+                detail_total.append(int(data_item.price) * int(data.getlist('qty')[idx]))
+                total += int(data_item.price) * int(data.getlist('qty')[idx])
+            
+
+            trans = TblTransaction.objects.create(total=total, username=TblUser.objects.get(pk=data_header['username']))
+            for idx, i in enumerate(data.getlist('id_cart')):
+                TblCart.objects.filter(id=i).update(id_transaction=trans.id, qty=detail_qty[idx], total=detail_total[idx])
+
+            data_cart = TblCart.objects.filter(id_transaction=trans.id)
+            ser = serializers.CartsIndexSerializer(data_cart, context={"request": request}, many=True)
+            data_response = {
+                "id_transaction": trans.id,
+                "total": trans.total
+            }
+            return Response(data={"status" : 200, "message" : "Berhasil membuat transaksi", "data": data_response, "cart": ser.data},  status=status.HTTP_201_CREATED)
+        except:
+            return Response(data={"status" : 400, "message" : "Terjadi Kesalahan"},  status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'GET':
+        jwt = JWTAuth()
+        try:
+            data_header = jwt.decode(request.headers['Authorization'])
+            trans = TblTransaction.objects.filter(username=data_header['username'], deleted=0)
+            ser = serializers.TransactionSerializer(trans, many=True)
+            return Response(data={"status" : 200, "message" : "Berhasil mengambil data", "data" : ser.data}, status=status.HTTP_200_OK)
+        except:
+            return Response(data={"status" : 400, "message" : "Terjadi Error"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@token_required
+def Pay(request):
+    if request.method == 'POST':
+        jwt = JWTAuth()
+        try:
+            data_header = jwt.decode(request.headers['Authorization'])
+
+            data_cart = TblCart.objects.filter(id_transaction=request.data['id_transaction'], username=data_header['username'])
+            ser = serializers.CartsIndexSerializer(data_cart, context={"request": request}, many=True)
+            data_response = {
+                "id_transaction": request.data['id_transaction'],
+                "total": TblTransaction.objects.get(pk=request.data['id_transaction']).total
+            }
+            return Response(data={"status" : 200, "message" : "Berhasil membuat transaksi", "data": data_response, "cart": ser.data},  status=status.HTTP_200_OK)
+        except:
+            return Response(data={"status" : 400, "message" : "Terjadi Kesalahan"},  status=status.HTTP_400_BAD_REQUEST)

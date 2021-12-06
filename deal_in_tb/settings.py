@@ -84,26 +84,26 @@ WSGI_APPLICATION = 'deal_in_tb.wsgi.application'
 #     }
 # }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'HOST': env('DB_HOST'),
-#         'NAME': env('DB_DATABASE'),
-#         'USER': env('DB_USERNAME'),
-#         'PASSWORD': env('DB_PASSWORD'),
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'HOST': 'ec2-23-23-219-25.compute-1.amazonaws.com',
-        'NAME': 'd3rj55b6al651n',
-        'USER': 'jlhqqaqfnvkuhy',
-        'PASSWORD': '3c3e7b1852498f52f3b89da70c213bf348223ea4439528b49f3c61b8ec686e27',
-        'PORT': 5432
+        'HOST': env('DB_HOST'),
+        'NAME': env('DB_DATABASE'),
+        'USER': env('DB_USERNAME'),
+        'PASSWORD': env('DB_PASSWORD'),
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'HOST': 'ec2-23-23-219-25.compute-1.amazonaws.com',
+#         'NAME': 'd3rj55b6al651n',
+#         'USER': 'jlhqqaqfnvkuhy',
+#         'PASSWORD': '3c3e7b1852498f52f3b89da70c213bf348223ea4439528b49f3c61b8ec686e27',
+#         'PORT': 5432
+#     }
+# }
 
 
 # Password validation
