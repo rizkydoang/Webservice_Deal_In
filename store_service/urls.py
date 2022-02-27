@@ -24,6 +24,7 @@ urlpatterns = [
     path('store/transaction/', views.Transaction, name="ApiTransactions"),
     path('store/transaction/<int:id>/', views.Transaction, name="ApiTransactionsById"),
     path('store/pay/', views.Pay, name="ApiPay"),
+    path('store/cancel/', views.Cancel, name="ApiCancel"),
 
     # Search
     path('store/search/<slug:search>/', views.Search, name="ApiSearchItems"),

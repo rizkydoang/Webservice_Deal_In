@@ -45,6 +45,7 @@ class ItemsIndexSerializer(serializers.ModelSerializer):
         image_url = obj.photo_item.url
         return request.build_absolute_uri(image_url)
 
+
 class CartsIndexSerializer(serializers.ModelSerializer):
     id_item = ItemsIndexSerializer()
     class Meta:
@@ -71,10 +72,16 @@ class CartsSerializer(serializers.ModelSerializer):
 #         fields = ('id', 'username', 'id_item', 'total', 'description')
 
 
+# class TransactionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = TblTransaction
+#         fields = ('id', 'username', 'total', 'get_status_display', 'date')
+
+
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TblTransaction
-        fields = ('id', 'username', 'total', 'get_status_display', 'date')
+        fields = ('id', 'username', 'total', 'date')
 
 
 class RolesSerializer(serializers.ModelSerializer):

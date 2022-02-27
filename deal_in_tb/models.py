@@ -20,13 +20,7 @@ class TblCategory(models.Model):
 
 
 class TblTransaction(models.Model):
-    status_list = [
-        ('0', 'Belum Transfer'),
-        ('1', 'Sedang di kirim'),
-        ('2', 'Sukses'),
-    ]
     date = models.DateField(default=datetime.now, blank=True)
-    status = models.CharField(max_length=1, choices=status_list, default=0)
     total = models.IntegerField(default=0)
     token = models.CharField(max_length=250, blank=True, null=True)
     username = models.ForeignKey(

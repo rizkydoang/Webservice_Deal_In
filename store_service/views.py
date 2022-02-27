@@ -7,8 +7,20 @@ from deal_in_tb import serializers
 from deal_in_tb.decorator import token_required, api_key_required
 from deal_in_tb.jwt import JWTAuth
 from django.db.models import Q
+from deal_in_tb.midtrans import api_client, snap
+import requests
 
-import datetime
+
+def TransactionToken(request, order_id, gross_amount):
+    transaction_token = snap.create_transaction_token({
+        "transaction_details": {
+            "order_id": order_id,
+            "gross_amount": gross_amount
+        }
+    })
+
+    return transaction_token
+
 
 # Create your views here.
 @api_view(['GET'])
@@ -154,7 +166,7 @@ def Cart(request, id=0):
 
     if request.method == 'POST':
         try:
-            if not TblCart.objects.filter(id_item=request.data['id_item'], username=request.data['username']).exists():
+            if not TblCart.objects.filter(id_item=request.data['id_item'], username=request.data['username'], deleted=0).exists():
                 serializer = serializers.CartsSerializer(data=request.data)
                 if serializer.is_valid():
                     serializer.save()
@@ -197,10 +209,10 @@ def Transaction(request):
         jwt = JWTAuth()
         try:
             data_header = jwt.decode(request.headers['Authorization'])
-            if TblTransaction.objects.filter(username=data_header['username'], status=0).exists():
-                data_trans = TblTransaction.objects.filter(username=data_header['username'], deleted=0)
-                ser = serializers.TransactionSerializer(data_trans, many=True)
-                return Response(data={"status" : 204, "data": ser.data, "message" : "Transaksi Sebelumnya Belum di bayar"},  status=status.HTTP_400_BAD_REQUEST)
+            # if TblTransaction.objects.filter(username=data_header['username'], deleted=0).exists():
+            #     data_trans = TblTransaction.objects.filter(username=data_header['username'], deleted=0)
+            #     ser = serializers.TransactionSerializer(data_trans, many=True)
+            #     return Response(data={"status" : 204, "data": ser.data, "message" : "Transaksi Sebelumnya Belum di bayar"},  status=status.HTTP_400_BAD_REQUEST)
 
             data = request.data
             detail_qty = []
@@ -208,20 +220,25 @@ def Transaction(request):
             total = 0
             for idx, i in enumerate(data.getlist('id_item')):
                 data_item = TblItem.objects.filter(pk=i, deleted=0).first()
+
+                if int(data_item.quantity) < int(data.getlist('qty')[idx]):
+                    return Response(data={"status" : 400, "message" : "Quantity melebihi yang tersedia"}, status=status.HTTP_400_BAD_REQUEST)
+
                 detail_qty.append(int(data.getlist('qty')[idx]))
                 detail_total.append(int(data_item.price) * int(data.getlist('qty')[idx]))
                 total += int(data_item.price) * int(data.getlist('qty')[idx])
-            
 
             trans = TblTransaction.objects.create(total=total, username=TblUser.objects.get(pk=data_header['username']))
+            token = TransactionToken(request, trans.id, trans.total)
+            TblTransaction.objects.filter(id=trans.id).update(token=token)
             for idx, i in enumerate(data.getlist('id_cart')):
-                TblCart.objects.filter(id=i).update(id_transaction=trans.id, qty=detail_qty[idx], total=detail_total[idx])
+                TblCart.objects.filter(id=i).update(id_transaction=trans.id, qty=detail_qty[idx], total=detail_total[idx], deleted=1)
 
             data_cart = TblCart.objects.filter(id_transaction=trans.id)
             ser = serializers.CartsIndexSerializer(data_cart, context={"request": request}, many=True)
             data_response = {
                 "id_transaction": trans.id,
-                "total": trans.total
+                "token": token,
             }
             return Response(data={"status" : 200, "message" : "Berhasil membuat transaksi", "data": data_response, "cart": ser.data},  status=status.HTTP_201_CREATED)
         except:
@@ -231,7 +248,7 @@ def Transaction(request):
         jwt = JWTAuth()
         try:
             data_header = jwt.decode(request.headers['Authorization'])
-            trans = TblTransaction.objects.filter(username=data_header['username'], deleted=0)
+            trans = TblTransaction.objects.filter(username=data_header['username'])
             ser = serializers.TransactionSerializer(trans, many=True)
             return Response(data={"status" : 200, "message" : "Berhasil mengambil data", "data" : ser.data}, status=status.HTTP_200_OK)
         except:
@@ -246,12 +263,45 @@ def Pay(request):
         try:
             data_header = jwt.decode(request.headers['Authorization'])
 
+            header = {
+                'Authorization': 'Basic U0ItTWlkLXNlcnZlci02OUpaSDlCNS1XS0hpczNXdkxzd3Nmdnk6'
+            }
+            response = requests.get('https://api.sandbox.midtrans.com/v2/'+ request.data['id_transaction']+ '/status', headers=header).json()
+
+            print(response)
+
+            if response['status_code'] != '404':
+                TblTransaction.objects.filter(id=request.data['id_transaction']).update(deleted=1)
+
             data_cart = TblCart.objects.filter(id_transaction=request.data['id_transaction'], username=data_header['username'])
             ser = serializers.CartsIndexSerializer(data_cart, context={"request": request}, many=True)
             data_response = {
-                "id_transaction": request.data['id_transaction'],
-                "total": TblTransaction.objects.get(pk=request.data['id_transaction']).total
+                "token": TblTransaction.objects.get(pk=request.data['id_transaction']).token,
+                "detail": response
             }
             return Response(data={"status" : 200, "message" : "Berhasil membuat transaksi", "data": data_response, "cart": ser.data},  status=status.HTTP_200_OK)
         except:
             return Response(data={"status" : 400, "message" : "Terjadi Kesalahan"},  status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@token_required
+def Cancel(request):
+    if request.method == 'POST':
+        jwt = JWTAuth() 
+        # try:
+        data_header = jwt.decode(request.headers['Authorization'])
+
+        header = {
+            'Authorization': 'Basic U0ItTWlkLXNlcnZlci02OUpaSDlCNS1XS0hpczNXdkxzd3Nmdnk6'
+        }
+        response = requests.post('https://api.sandbox.midtrans.com/v2/'+ request.data['id_transaction']+ '/cancel', headers=header).json()
+
+        print(response)
+
+        data_response = {
+            "response": response
+        }
+        return Response(data={"status" : 200, "message" : "Berhasil cancel transaksi", "data": data_response},  status=status.HTTP_200_OK)
+        # except:
+        #     return Response(data={"status" : 400, "message" : "Terjadi Kesalahan"},  status=status.HTTP_400_BAD_REQUEST)
