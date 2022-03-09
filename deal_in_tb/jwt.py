@@ -13,4 +13,4 @@ class JWTAuth:
         return jwt.encode(payload, self.secret, algorithm='HS256')
 
     def decode(self, token):
-        return jwt.decode(token, self.secret, algorithm=['HS256'])
+        return jwt.decode(token, self.secret, algorithms=['HS256'])
